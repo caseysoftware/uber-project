@@ -3,6 +3,8 @@
 include 'creds.php';
 include 'vendor/autoload.php';
 
+use GuzzleHttp\Client;
+
 $client = new Google_Client();
 $client->setApplicationName('Test App');
 $client->setAccessType('offline');
@@ -23,6 +25,7 @@ foreach($calendars as $calendarId) {
     $results = $service->events->listEvents($calendarId, $optParams);
     foreach ($results->getItems() as $entries) {
 
+        // Skip if there's no location or a hangout listed
         if (strpos($entries->location, 'http') !== false || strlen($entries->location) == 0) {
             continue;
         }
@@ -38,6 +41,30 @@ foreach($calendars as $calendarId) {
     }
 }
 
+$gmaps = 'https://maps.googleapis.com/maps/api/distancematrix/json?key=' . $google_key;
+
+$client = new Client(['base_uri' => $gmaps]);
+
+foreach($eventList as $event) {
+    $params = '&origins=' . urlencode($home);
+    $params .= '&destinations=' . urlencode($event['address']);
+
+    $response = $client->request('GET', $gmaps . $params);
+    $body = json_decode($response->getBody());
+
+    $distance = $body->rows[0]->elements[0]->distance->value;
+    // It's further than 100 km away, probably time to fly!
+    if ($distance > 100000) {
+        continue;
+    }
+
+//    echo $event['address'] . "\n";
+//    echo ($distance/1000) . " km\n";
+
+
+}
+
+
 
 
 
@@ -46,7 +73,9 @@ foreach($calendars as $calendarId) {
 // done: get a list of meetings
 // done: figure out where the meetings are
 // todo: sort the list of meetings
-// todo: figure out the timing based on traffic
+// done: figure out if it's close enough to drive (100 km)
 // todo: map a route between there and there
+// todo: figure out the timing based on traffic
 // todo: map a route home at the end of the day
-
+// todo: estimate a cost to get there
+// todo: schedule a reservation for that time (sandbox)
