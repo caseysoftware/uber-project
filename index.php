@@ -43,7 +43,7 @@ foreach($calendars as $calendarId) {
 
 $gmaps = 'https://maps.googleapis.com/maps/api/distancematrix/json?key=' . $google_key;
 
-$client = new Client(['base_uri' => $gmaps]);
+$client = new Client();
 
 foreach($eventList as $event) {
     $params = '&origins=' . urlencode($home);
@@ -58,14 +58,17 @@ foreach($eventList as $event) {
         continue;
     }
 
-//    echo $event['address'] . "\n";
-//    echo ($distance/1000) . " km\n";
+//    $headers = ['Authorization' => 'Bearer ' . $uber_api_key];
+//    $request = $client->get('https://api.uber.com/v1/products?latitude=' . $lat . '&longitude=' . $lon . '&server_token=' . $uber_token, $headers);
+//    $response = $request->send();
+//
+//    echo $response->getBody();
 
+    echo $event['address'] . "\n";
+    echo ($distance/1000) . " km\n";
 
+die();
 }
-
-
-
 
 
 // done: connect to google calendar
@@ -77,5 +80,7 @@ foreach($eventList as $event) {
 // todo: map a route between there and there
 // todo: figure out the timing based on traffic
 // todo: map a route home at the end of the day
+// todo: figure out the lat/lon for where we are
+// todo: figure out the available products
 // todo: estimate a cost to get there
 // todo: schedule a reservation for that time (sandbox)
