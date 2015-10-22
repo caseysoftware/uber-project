@@ -113,10 +113,14 @@ foreach($eventList as $event) {
     echo "  This ride is going to cost " . $estimate->price->display . " and take about $duration minutes.\n";
     echo "  The ETA is about " . $estimate->pickup_estimate . " minutes.\n";
 
-//    echo $event['address'] . "\n";
-//    echo ($distance/1000) . " km\n";
-
-die();
+    // This will actually book the ride request.
+    echo "Now we're booking the ride.\n";
+    $uber_sandbox = 'https://sandbox-api.uber.com/v1/requests';
+    $response = $client->request('POST', $uber_sandbox, $options);
+    $ride_request = json_decode($response->getBody());
+    echo "  Your request id is " . $ride_request->request_id . ".\n";
+    echo "  Your ride will arive in " . $ride_request->eta . " minutes.\n";
+    echo "\n";
 }
 echo "\n\n";
 
