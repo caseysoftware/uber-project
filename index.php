@@ -53,18 +53,26 @@ $lon = $body->results[0]->geometry->location->lng;
 // Alright, now let's find out where we're going.
 $gmaps = 'https://maps.googleapis.com/maps/api/distancematrix/json?key=' . $google_key;
 
+echo "\n\n";
+
 foreach($eventList as $event) {
     $params = '&origins=' . urlencode($home);
     $params .= '&destinations=' . urlencode($event['address']);
 
+    echo "Now we're looking up the distance between '$home' and '" . $event['address'] . "' \n";
     $response = $client->request('GET', $gmaps . $params);
     $body = json_decode($response->getBody());
     $distance = $body->rows[0]->elements[0]->distance->value;
+    $distance = $distance/1000;
+
     // It's further than 100 km away, probably time to fly!
-    if ($distance > 100000) {
+    if ($distance > 100) {
+        echo "  Whoa.. that's over $distance km away. You should fly.\n";
         continue;
     }
+    echo "  Alright, you're only traveling $distance km.\n";
 
+    echo "Now we're finding what products are available where you are..\n";
     $params = '&latitude=' . $lat;
     $params .= '&longitude=' . $lon;
     $uber = 'https://api.uber.com/v1/products?server_token=' . $uber_token;
@@ -73,9 +81,11 @@ foreach($eventList as $event) {
 
     // Check to make sure at least one product is available.. if not, move on. If so, choose the first product.
     if (!count($products->products)) {
+        echo "  Sorry, we don't have any products available for you there.\n";
         continue;
     }
     $product = $products->products[0];
+    echo "  Alright, we're defaulting to " . $product->display_name . " for this pickup.\n";
 
     // This finds the lat/lon of our destination so we can create an estimate.
     $geocode = 'https://maps.googleapis.com/maps/api/geocode/json?key=' . $google_key;
@@ -85,6 +95,7 @@ foreach($eventList as $event) {
     $end_lat = $body->results[0]->geometry->location->lat;
     $end_lon = $body->results[0]->geometry->location->lng;
 
+    echo "Now we're finding out how much this ride will cost.\n";
     // This will give us an estimate.
     $params = [];
     $params['product_id'] = $product->product_id;
@@ -99,14 +110,15 @@ foreach($eventList as $event) {
     $response = $client->request('POST', $uber, $options);
     $estimate = json_decode($response->getBody());
     $duration = ($estimate->trip->duration_estimate/60);
-    echo "Hey, this ride is going to cost " . $estimate->price->display . " and take about $duration minutes. The ETA is " . $estimate->pickup_estimate . " minutes\n";
+    echo "  This ride is going to cost " . $estimate->price->display . " and take about $duration minutes.\n";
+    echo "  The ETA is about " . $estimate->pickup_estimate . " minutes.\n";
 
 //    echo $event['address'] . "\n";
 //    echo ($distance/1000) . " km\n";
 
 die();
 }
-
+echo "\n\n";
 
 // done: connect to google calendar
 // done: define home
