@@ -65,11 +65,17 @@ foreach($eventList as $event) {
         continue;
     }
 
-    $headers = ['Authorization' => 'Bearer ' . $uber_api_key];
-    $request = $client->get('https://api.uber.com/v1/products?latitude=' . $lat . '&longitude=' . $lon . '&server_token=' . $uber_token, $headers);
-    $response = $request->send();
+    $params = '&latitude=' . $lat;
+    $params .= '&longitude=' . $lon;
+    $uber = 'https://api.uber.com/v1/products?server_token=' . $uber_token;
+    $response = $client->request('GET', $uber . $params);
+    $products = json_decode($response->getBody());
 
-    echo $response->getBody();
+    // Check to make sure at least one product is available.. if not, move on. If so, choose the first product.
+    if (!count($products->products)) {
+        continue;
+    }
+    $product = $products->products[0];
 
     echo $event['address'] . "\n";
     echo ($distance/1000) . " km\n";
@@ -85,6 +91,6 @@ die();
 // todo: sort the list of meetings
 // done: figure out if it's close enough to drive (100 km)
 // done: figure out the lat/lon for where we are
-// todo: figure out the available products
+// done: figure out the available products
 // todo: estimate a cost to get there
 // todo: schedule a reservation for that time (sandbox)
