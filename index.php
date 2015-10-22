@@ -41,9 +41,17 @@ foreach($calendars as $calendarId) {
     }
 }
 
-$gmaps = 'https://maps.googleapis.com/maps/api/distancematrix/json?key=' . $google_key;
-
+// This finds the lat/lon of home so we know what products are available to us later.
 $client = new Client();
+$geocode = 'https://maps.googleapis.com/maps/api/geocode/json?key=' . $google_key;
+$params = '&address=' . urlencode($home);
+$response = $client->request('GET', $geocode . $params);
+$body = json_decode($response->getBody());
+$lat = $body->results[0]->geometry->location->lat;
+$lon = $body->results[0]->geometry->location->lng;
+
+// Alright, now let's find out where we're going.
+$gmaps = 'https://maps.googleapis.com/maps/api/distancematrix/json?key=' . $google_key;
 
 foreach($eventList as $event) {
     $params = '&origins=' . urlencode($home);
@@ -51,18 +59,17 @@ foreach($eventList as $event) {
 
     $response = $client->request('GET', $gmaps . $params);
     $body = json_decode($response->getBody());
-
     $distance = $body->rows[0]->elements[0]->distance->value;
     // It's further than 100 km away, probably time to fly!
     if ($distance > 100000) {
         continue;
     }
 
-//    $headers = ['Authorization' => 'Bearer ' . $uber_api_key];
-//    $request = $client->get('https://api.uber.com/v1/products?latitude=' . $lat . '&longitude=' . $lon . '&server_token=' . $uber_token, $headers);
-//    $response = $request->send();
-//
-//    echo $response->getBody();
+    $headers = ['Authorization' => 'Bearer ' . $uber_api_key];
+    $request = $client->get('https://api.uber.com/v1/products?latitude=' . $lat . '&longitude=' . $lon . '&server_token=' . $uber_token, $headers);
+    $response = $request->send();
+
+    echo $response->getBody();
 
     echo $event['address'] . "\n";
     echo ($distance/1000) . " km\n";
@@ -77,10 +84,7 @@ die();
 // done: figure out where the meetings are
 // todo: sort the list of meetings
 // done: figure out if it's close enough to drive (100 km)
-// todo: map a route between there and there
-// todo: figure out the timing based on traffic
-// todo: map a route home at the end of the day
-// todo: figure out the lat/lon for where we are
+// done: figure out the lat/lon for where we are
 // todo: figure out the available products
 // todo: estimate a cost to get there
 // todo: schedule a reservation for that time (sandbox)
