@@ -77,8 +77,32 @@ foreach($eventList as $event) {
     }
     $product = $products->products[0];
 
-    echo $event['address'] . "\n";
-    echo ($distance/1000) . " km\n";
+    // This finds the lat/lon of our destination so we can create an estimate.
+    $geocode = 'https://maps.googleapis.com/maps/api/geocode/json?key=' . $google_key;
+    $params = '&address=' . urlencode($event['address']);
+    $response = $client->request('GET', $geocode . $params);
+    $body = json_decode($response->getBody());
+    $end_lat = $body->results[0]->geometry->location->lat;
+    $end_lon = $body->results[0]->geometry->location->lng;
+
+    // This will give us an estimate.
+    $params = [];
+    $params['product_id'] = $product->product_id;
+    $params['start_latitude'] = $lat;
+    $params['start_longitude'] = $lon;
+    $params['end_latitude'] = $end_lat;
+    $params['end_longitude'] = $end_lon;
+    $options = [];
+    $options['headers'] = ['Authorization' => 'Bearer ' . $uber_api_key, 'Content-Type' => 'application/json'];
+    $options['body'] = json_encode($params);
+    $uber = 'https://api.uber.com/v1/requests/estimate';
+    $response = $client->request('POST', $uber, $options);
+    $estimate = json_decode($response->getBody());
+    $duration = ($estimate->trip->duration_estimate/60);
+    echo "Hey, this ride is going to cost " . $estimate->price->display . " and take about $duration minutes. The ETA is " . $estimate->pickup_estimate . " minutes\n";
+
+//    echo $event['address'] . "\n";
+//    echo ($distance/1000) . " km\n";
 
 die();
 }
@@ -92,5 +116,5 @@ die();
 // done: figure out if it's close enough to drive (100 km)
 // done: figure out the lat/lon for where we are
 // done: figure out the available products
-// todo: estimate a cost to get there
+// done: estimate a cost to get there
 // todo: schedule a reservation for that time (sandbox)
